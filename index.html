@@ -73,7 +73,7 @@
 <body class=' relative'>
     <div id=app class='h-screen w-screen relative min-h-screen flex flex-col'>
         <div id=playground class='flex-grow'>
-            <div role=row v-for='(cols,row) in board'>
+            <div role=row v-for='(cols,row) in board()'>
                 <div role=column v-for='(cell,col) in cols' @click='cellClicked(row,col)' class='hover:bg-gray-700'
                     :class='getClass(row,col)'>
                     <span class='inset-0 font-extrabold self-center'>{{ cell }} </span>
@@ -109,6 +109,92 @@
 
 
 
+    class TicTacToe {
+        static checks = [
+            [
+                [0, 0], [0, 1], [0, 2]
+            ], [
+                [1, 0], [1, 1], [1, 2]
+            ], [
+                [2, 0], [2, 1], [2, 2]
+            ], [
+                [0, 0], [1, 0], [2, 0]
+            ], [
+                [0, 1], [1, 1], [2, 1]
+            ], [
+                [0, 2], [1, 2], [2, 2]
+            ], [
+                [0, 0], [1, 1], [2, 2]
+            ], [
+                [0, 2], [1, 1], [2, 0]
+            ]
+        ]
+
+        constructor() {
+            this.board = [];
+        }
+
+        reset() {
+            this.board = [];
+            for (var i = 0; i <= 2; i++) {
+                this.board.push([]);
+                for (var j = 0; j <= 2; j++) {
+                    this.board[i].push('');
+                }
+            }
+        }
+
+        checkBoard() {
+
+            let checks = TicTacToe.checks;
+            let results = { done: false, winner: "", winningTriplet: [] };
+            let v = '';
+            let win = true;
+
+            for (let i in checks) {
+                v = '';
+                win = true;
+                for (let j = 0; j <= 2; j++) {
+                    let row = checks[i][j][0]
+                    let col = checks[i][j][1]
+                    let value = this.board[row][col]
+                    if (!value) {
+                        win = false;
+                        v = '';
+                        break;
+                    }
+                    if (!v) { v = value };
+                    if (v != value) {
+                        win = false;
+                        v = '';
+                        break;
+                    }
+                }
+                if (win && v) {
+                    results.done = true;
+                    results.winner = v;
+                    results.winningTriplet = checks[i];
+                    break;
+                }
+            }
+            if (!win || !v) {
+                let abort = false
+                for (let row = 0; row <= 2 && !abort; row++) {
+                    for (let col = 0; col <= 2 && !abort; col++) {
+                        let value = this.board[row][col]
+                        if (!value) {
+                            abort = true
+                        }
+                    }
+                }
+                results.done = !abort;
+            }
+            return results;
+        }
+
+    }
+
+
 
     var VueApp = new Vue({
 
@@ -117,74 +203,31 @@
         data: {
             message: 'Hi !',
             playerFirst: false,
-            board: [],
+            ttt: new TicTacToe,
             winner: '',
             winningTriplet: [],
             you: 0,
             computer: 0,
-            checks: [
-                [
-                    [0, 0], [0, 1], [0, 2]
-                ], [
-                    [1, 0], [1, 1], [1, 2]
-                ], [
-                    [2, 0], [2, 1], [2, 2]
-                ], [
-                    [0, 0], [1, 0], [2, 0]
-                ], [
-                    [0, 1], [1, 1], [2, 1]
-                ], [
-                    [0, 2], [1, 2], [2, 2]
-                ], [
-                    [0, 0], [1, 1], [2, 2]
-                ], [
-                    [0, 2], [1, 1], [2, 0]
-                ]
-            ]
 
         },
 
         computed: {
             done() {
-                for (let i in this.checks) {
-                    let v = '';
-                    let win = true;
-                    for (let j = 0; j <= 2; j++) {
-                        let row = this.checks[i][j][0]
-                        let col = this.checks[i][j][1]
-                        let value = this.board[row][col]
-                        if (!value) {
-                            win = false;
-                            v = '';
-                            break;
-                        }
-                        if (!v) { v = value };
-                        if (v != value) {
-                            win = false;
-                            v = '';
-                            break;
-                        }
-                    }
-                    if (win && v) {
-                        this.winner = v;
-                        this.winningTriplet = this.checks[i];
-                        if (v == 'O') {
-                            this.computer++
-                        } else if (v == 'X') {
-                            this.you++
-                        }
-                        return true;
+                let results = this.ttt.checkBoard();
+                console.log(results);
+                this.winner = results.winner
+                this.winningTriplet = results.winningTriplet
+                if (results.done && this.winner) {
+                    if (this.winner == 'O') {
+                        this.computer++
+                    } else if (this.winner == 'X') {
+                        this.you++
                     }
                 }
-                for (let row = 0; row <= 2; row++) {
-                    for (let col = 0; col <= 2; col++) {
-                        let value = this.board[row][col]
-                        if (!value)
-                            return false;
-                    }
-                }
-                return true;
-            },
+                return results.done;
+            }
+
+
         },
 
         created() {
@@ -202,6 +245,20 @@
 
 
         methods: {
+
+            board(row = null, col = null, value = null) {
+                if (value !== null && col !== null && row !== null) {
+                    Vue.set(this.ttt.board[row], col, value);
+                    return value;
+                } else if (value === null && row !== null && col !== null) {
+                    return this.ttt.board[row][col]
+                } else if (value === null && col === null && row !== null) {
+                    return this.ttt.board[row]
+                } else {
+                    return this.ttt.board;
+                }
+            },
+
             getClass(row, col) {
                 if (this.winningTriplet) {
                     found = this.winningTriplet.find(cell => cell[0] == row && cell[1] == col);
@@ -213,8 +270,8 @@
             },
 
             cellClicked(row, col) {
-                if (!this.board[row][col] && !this.winner && !this.done) {
-                    Vue.set(this.board[row], col, 'X');
+                if (!this.board(row, col) && !this.winner && !this.done) {
+                    this.board(row, col, 'X');
                     if (!this.done) {
                         this.play();
                     }
@@ -228,10 +285,10 @@
                 // and try what would happen if it sets an O or X in each empty cell and if no result then try again until board wins or ties
                 // that's tricky !
 
-                for (row in this.board) {
-                    for (col in this.board[row]) {
-                        if (!this.board[row][col]) {
-                            Vue.set(this.board[row], col, 'O')
+                for (row in this.board()) {
+                    for (col in this.board(row)) {
+                        if (!this.board(row, col)) {
+                            this.board(row, col, 'O')
                             return;
                         }
                     }
@@ -239,13 +296,7 @@
             },
 
             reset() {
-                this.board = [];
-                for (var i = 0; i <= 2; i++) {
-                    this.board.push([]);
-                    for (var j = 0; j <= 2; j++) {
-                        this.board[i].push('');
-                    }
-                }
+                this.ttt.reset();
                 this.winner = '';
                 this.winningTriplet = [];
             }
