@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Tic-Tac-Toe</title>
+
+    <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: black;
+            color: cornsilk;
+            border-color: cornsilk;
+        }
+
+        div#playground {
+            justify-content: space-around;
+            display: flex;
+            flex-direction: column;
+            width: 94vmin;
+            height: 100%;
+            margin: auto;
+            padding-top: 3vmin;
+            padding-bottom: 3vmin;
+            align-items: center;
+        }
+
+        div[role=row] {
+            display: flex;
+            flex-direction: row;
+            min-height: 33%;
+            min-height: 33%;
+            max-height: 33%;
+            width: 100%;
+            margin: auto;
+            border-top-width: 2px;
+            style='margin:auto'
+            justify-content: space-around;
+            flex-basis: auto;
+        }
+
+        div[role=column] {
+            min-width: 33%;
+            max-width: 33%;
+            width: 33%;
+            border-left-width: 2px;
+            flex-basis: auto;
+            display: flex;
+            flex-direction: row;
+            padding: 5px;
+
+        }
+
+        div[role=column] span {
+            align-self: center;
+            flex-basis: auto;
+            margin: auto;
+            font-size: 13vmin;
+        }
+
+        div:first-child {
+            border-top-width: 0px !important;
+            border-left-width: 0px !important;
+        }
+    </style>
+
+
+</head>
+
+<body class=' relative'>
+    <div id=app class='h-screen w-screen relative min-h-screen flex flex-col'>
+        <div id=playground class='flex-grow'>
+            <div role=row v-for='(cols,row) in board'>
+                <div role=column v-for='(cell,col) in cols' @click='cellClicked(row,col)' class='hover:bg-gray-700'
+                    :class='getClass(row,col)'>
+                    <span class='inset-0 font-extrabold self-center'>{{ cell }} </span>
+                </div>
+            </div>
+        </div>
+        <div class='absolute inset-x-0 bottom-0 width-screen'>
+            <div id=status v-show='done' style='margin:auto' class='flex flex-col'>
+                <div v-if='winner=="X"' class='text-green-600 self-center'>
+                    Conratulations ! You won !
+                </div>
+                <div v-else-if='winner=="O"' class='text-red-500 self-center'>
+                    I won ! Try harder next time :-)
+                </div>
+                <div v-else class='text-blue-400 self-center'>
+                    It's a tie !
+                </div>
+                <button class='m-3 p-2 rounded-lg bg-blue-400 self-center' @click='reset()'> Play Again
+                </button>
+            </div>
+            <div>
+                <div v-if='(you + computer) > 0 ' class='bg-blue-900 '>
+                    Score : You {{ you }} / Me {{ computer }}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+<script>
+
+
+
+
+    var VueApp = new Vue({
+
+        el: '#app',
+
+        data: {
+            message: 'Hi !',
+            playerFirst: false,
+            board: [],
+            winner: '',
+            winningTriplet: [],
+            you: 0,
+            computer: 0,
+            checks: [
+                [
+                    [0, 0], [0, 1], [0, 2]
+                ], [
+                    [1, 0], [1, 1], [1, 2]
+                ], [
+                    [2, 0], [2, 1], [2, 2]
+                ], [
+                    [0, 0], [1, 0], [2, 0]
+                ], [
+                    [0, 1], [1, 1], [2, 1]
+                ], [
+                    [0, 2], [1, 2], [2, 2]
+                ], [
+                    [0, 0], [1, 1], [2, 2]
+                ], [
+                    [0, 2], [1, 1], [2, 0]
+                ]
+            ]
+
+        },
+
+        computed: {
+            done() {
+                for (let i in this.checks) {
+                    let v = '';
+                    let win = true;
+                    for (let j = 0; j <= 2; j++) {
+                        let row = this.checks[i][j][0]
+                        let col = this.checks[i][j][1]
+                        let value = this.board[row][col]
+                        if (!value) {
+                            win = false;
+                            v = '';
+                            break;
+                        }
+                        if (!v) { v = value };
+                        if (v != value) {
+                            win = false;
+                            v = '';
+                            break;
+                        }
+                    }
+                    if (win && v) {
+                        this.winner = v;
+                        this.winningTriplet = this.checks[i];
+                        if (v == 'O') {
+                            this.computer++
+                        } else if (v == 'X') {
+                            this.you++
+                        }
+                        return true;
+                    }
+                }
+                for (let row = 0; row <= 2; row++) {
+                    for (let col = 0; col <= 2; col++) {
+                        let value = this.board[row][col]
+                        if (!value)
+                            return false;
+                    }
+                }
+                return true;
+            },
+        },
+
+        created() {
+            this.reset();
+        },
+
+        mounted() {
+            var coin = Math.floor(Math.random() * 2);
+            if (coin) {
+                this.playerFirst = true;
+            } else {
+                this.play();
+            }
+        },
+
+
+        methods: {
+            getClass(row, col) {
+                if (this.winningTriplet) {
+                    found = this.winningTriplet.find(cell => cell[0] == row && cell[1] == col);
+                    if (found) {
+                        return ' bg-green-700 hover:bg-green-700'
+                    }
+                }
+                return '';
+            },
+
+            cellClicked(row, col) {
+                if (!this.board[row][col] && !this.winner && !this.done) {
+                    Vue.set(this.board[row], col, 'X');
+                    if (!this.done) {
+                        this.play();
+                    }
+                }
+            },
+
+            play() {
+                // Needs to be rewritten - this just selects first available one - 
+                // it should find all empty ones and check if it could be usefull for for computer to win and give priority or for user to win 
+                // this possibly means we should find all emty cells and then construct a copy board  
+                // and try what would happen if it sets an O or X in each empty cell and if no result then try again until board wins or ties
+                // that's tricky !
+
+                for (row in this.board) {
+                    for (col in this.board[row]) {
+                        if (!this.board[row][col]) {
+                            Vue.set(this.board[row], col, 'O')
+                            return;
+                        }
+                    }
+                }
+            },
+
+            reset() {
+                this.board = [];
+                for (var i = 0; i <= 2; i++) {
+                    this.board.push([]);
+                    for (var j = 0; j <= 2; j++) {
+                        this.board[i].push('');
+                    }
+                }
+                this.winner = '';
+                this.winningTriplet = [];
+            }
+
+        }
+    });
+</script>
+
+</html>
